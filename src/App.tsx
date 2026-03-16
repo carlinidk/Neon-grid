@@ -199,6 +199,9 @@ export default function App() {
     const initCG = async () => {
       if (window.CrazyGames) {
         try {
+          if (typeof window.CrazyGames.SDK.init === 'function') {
+            await window.CrazyGames.SDK.init();
+          }
           await window.CrazyGames.SDK.game.sdkGameLoadingStart();
           await window.CrazyGames.SDK.game.sdkGameLoadingStop();
         } catch (e) {
@@ -719,10 +722,17 @@ export default function App() {
     };
   }, [gameState, arenaSize]);
 
-  const watchAd = (itemToUnlock: string) => {
+  const watchAd = async (itemToUnlock: string) => {
     setIsWatchingAd(true);
     
     if (window.CrazyGames) {
+      try {
+        if (typeof window.CrazyGames.SDK.init === 'function') {
+          await window.CrazyGames.SDK.init();
+        }
+      } catch (e) {
+        console.error("CrazyGames init error in watchAd", e);
+      }
       const callbacks = {
         adFinished: () => {
           setUnlockedItems(prev => [...prev, itemToUnlock]);
@@ -739,7 +749,13 @@ export default function App() {
           soundManager.setBoosting(false);
         }
       };
-      window.CrazyGames.SDK.ad.requestAd('rewarded', callbacks);
+      try {
+        window.CrazyGames.SDK.ad.requestAd('rewarded', callbacks);
+      } catch (e) {
+        console.error("CrazyGames requestAd error", e);
+        setUnlockedItems(prev => [...prev, itemToUnlock]);
+        setIsWatchingAd(false);
+      }
     } else {
       // Fallback for local testing
       setTimeout(() => {
